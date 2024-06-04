@@ -11,10 +11,20 @@ protocol MainViewProtocol: AnyObject {
     var networkSerice: Network! {get set}
 }
 
+enum Section: Int {
+    case movieForYou = 0
+    case moviePopular = 1
+    case movieAllFameliy = 2
+    
+}
+
 //MARK: - MainViewController
 class MainViewController: UIViewController {
     
     var networkSerice: Network = APICaller()
+    
+    private var randomTitleMovie: Movie?
+    private var headerView: HeaderUIView?
     
     let sectionTitle: [String] = ["Фильмы для вас", "Популярные фильмы", "Фильмы для всей семьи"]
     
@@ -22,7 +32,7 @@ class MainViewController: UIViewController {
         $0.register(CollectionViewTableViewCell.self, forCellReuseIdentifier: CollectionViewTableViewCell.resulId)
         $0.delegate = self
         $0.dataSource = self
-
+        
         return $0
     }(UITableView(frame: .zero, style: .grouped))
     
@@ -30,13 +40,25 @@ class MainViewController: UIViewController {
     //MARK:  ViewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
-         let headerView = HeaderUIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 450))
+        headerView = HeaderUIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 450))
         tableView.tableHeaderView = headerView
         view.addSubview(tableView)
         configurNavBar()
-        
-        getMovise()
-        
+        configureHeroHeaderView()
+    }
+    
+    private func configureHeroHeaderView() {
+        APICaller.shared.sendRequest { [weak self] result in
+            switch result {
+            case .success(let title):
+                let selectTitile = title.randomElement()
+                self?.randomTitleMovie = selectTitile
+                
+                self?.headerView?.configure(with: TitleViewModel(titleName: selectTitile?.posterURLPreview ?? "logo2", posterURL: selectTitile?.posterURL ?? "logo2"))
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
     //MARK:  ViewDidLayoutSubviews
     override func viewDidLayoutSubviews() {
@@ -52,17 +74,13 @@ class MainViewController: UIViewController {
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: image, style: .done, target: self, action: nil)
         
         navigationItem.rightBarButtonItems = [
-         UIBarButtonItem(image: UIImage(systemName: "person"), style: .done, target: self, action: nil),
-         UIBarButtonItem(image: UIImage(systemName: "play.rectangle"), style: .done, target: self, action: nil)
-         ]
+            UIBarButtonItem(image: UIImage(systemName: "person"), style: .done, target: self, action: nil),
+            UIBarButtonItem(image: UIImage(systemName: "play.rectangle"), style: .done, target: self, action: nil)
+        ]
         navigationController?.navigationBar.tintColor = UIColor(named: "mainColor")
     }
     
-    private func getMovise() {
-        APICaller.shared.sendRequest { _ in
-            
-        }
-    }
+
     
 }
 
@@ -110,8 +128,59 @@ extension MainViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CollectionViewTableViewCell.resulId, for: indexPath) as? CollectionViewTableViewCell else {return UITableViewCell()}
+        
+        cell.delegate = self
+        switch indexPath.section {
+            
+        case Section.movieForYou.rawValue:
+            
+            APICaller.shared.sendRequest { result in
+                switch result {
+                case .success(let titles):
+                    cell.configure(with: titles)
+                case .failure(let error):
+                    print(error)
+                }
+            }
+            
+        case Section.moviePopular.rawValue:
+            APICaller.shared.sendRequest { result in
+                switch result {
+                case.success(let titles):
+                    cell.configure(with: titles)
+                case.failure(let error):
+                    print(error)
+                }
+                
+            }
+            
+        case Section.movieAllFameliy.rawValue:
+            APICaller.shared.sendRequest { result in
+                switch result {
+                case.success(let titles):
+                    cell.configure(with: titles)
+                case.failure(let error):
+                    print(error)
+                }
+                
+            }
+            
+        default:
+            return UITableViewCell()
+        }
         return cell
     }
     
     
+}
+
+extension MainViewController: CollectionViewTableViewCellDelegate {
+    func collectionViewTableViewCellDidTapCell(_ cell: CollectionViewTableViewCell, viewModel: TitlePreviewViewModel) {
+        DispatchQueue.main.async { [weak self] in
+            let TitliePreviewVC = TitliePreviewViewController()
+            TitliePreviewVC.configure(with: viewModel)
+            self?.navigationController?.pushViewController(TitliePreviewVC, animated: true)
+        }
+
+    }
 }

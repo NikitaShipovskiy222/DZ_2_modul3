@@ -1,57 +1,94 @@
-//
-//  Movie.swift
-//  DZ_2_modul3
-//
-//  Created by Nikita Shipovskiy on 03/06/2024.
-//
 
-import Foundation
-
+// MARK: - TrendingMoviesResponse
 struct TrendingMoviesResponse: Codable {
-    let results: [Movie]
+    let total, totalPages: Int
+    let items: [Movie]
 }
 
+// MARK: Movie
 struct Movie: Codable {
-    let countries: [String]
-    
-    let genres: [String]
-
-    let imdbId: String?
-    let kinopoiskId: Int
-    let nameEn: String?
+    let kinopoiskID: Int
+    let imdbID, nameRu: String?
+    let nameEn: JSONNull?
     let nameOriginal: String?
-    let nameRu: String
-    let posterUrl: String
-    let posterUrlPreview: String
+    let countries: [Country]
+    let genres: [Genre]
+    let ratingKinopoisk: Double
     let ratingImdb: Double?
-    let ratingKinopoisk: Double?
-    let type: String?
     let year: Int
+    let type: String
+    let posterURL, posterURLPreview: String
+
+    enum CodingKeys: String, CodingKey {
+        case kinopoiskID = "kinopoiskId"
+        case imdbID = "imdbId"
+        case nameRu, nameEn, nameOriginal, countries, genres, ratingKinopoisk, ratingImdb, year, type
+        case posterURL = "posterUrl"
+        case posterURLPreview = "posterUrlPreview"
+    }
 }
 
-//            {
-//        countries =             (
-//                            {
-//                country = "\U041a\U043e\U0440\U0435\U044f \U042e\U0436\U043d\U0430\U044f";
-//            }
-//        );
-//        genres =             (
-//                            {
-//                genre = "\U043c\U0443\U0437\U044b\U043a\U0430";
-//            },
-//                            {
-//                genre = "\U043a\U043e\U0440\U043e\U0442\U043a\U043e\U043c\U0435\U0442\U0440\U0430\U0436\U043a\U0430";
-//            }
-//        );
-//        imdbId = "<null>";
-//        kinopoiskId = 1201206;
-//        nameEn = "<null>";
-//        nameOriginal = "BTS: Blood Sweat & Tears";
-//        nameRu = "<null>";
-//        posterUrl = "https://kinopoiskapiunofficial.tech/images/posters/kp/1201206.jpg";
-//        posterUrlPreview = "https://kinopoiskapiunofficial.tech/images/posters/kp_small/1201206.jpg";
-//        ratingImdb = "<null>";
-//        ratingKinopoisk = "9.4";
-//        type = VIDEO;
-//        year = 2016;
-//    },
+// MARK:  Country
+struct Country: Codable {
+    let country: String
+}
+
+// MARK:  Genre
+struct Genre: Codable {
+    let genre: String
+}
+
+// MARK:  Encode/decode helpers
+
+class JSONNull: Codable, Hashable {
+
+    public static func == (lhs: JSONNull, rhs: JSONNull) -> Bool {
+            return true
+    }
+
+    public var hashValue: Int {
+            return 0
+    }
+
+    public init() {}
+
+    public required init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            if !container.decodeNil() {
+                    throw DecodingError.typeMismatch(JSONNull.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Wrong type for JSONNull"))
+            }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+    }
+}
+
+
+//{
+//            "kinopoiskId": 1201206,
+//            "imdbId": null,
+//            "nameRu": null,
+//            "nameEn": null,
+//            "nameOriginal": "BTS: Blood Sweat & Tears",
+//            "countries": [
+//                {
+//                    "country": "Корея Южная"
+//                }
+//            ],
+//            "genres": [
+//                {
+//                    "genre": "музыка"
+//                },
+//                {
+//                    "genre": "короткометражка"
+//                }
+//            ],
+//            "ratingKinopoisk": 9.4,
+//            "ratingImdb": null,
+//            "year": 2016,
+//            "type": "VIDEO",
+//            "posterUrl": "https://kinopoiskapiunofficial.tech/images/posters/kp/1201206.jpg",
+//            "posterUrlPreview": "https://kinopoiskapiunofficial.tech/images/posters/kp_small/1201206.jpg"
+//        },

@@ -7,18 +7,24 @@
 
 import UIKit
 
+protocol CollectionViewTableViewCellDelegate: AnyObject {
+    func collectionViewTableViewCellDidTapCell(_ cell: CollectionViewTableViewCell, viewModel: TitlePreviewViewModel)
+}
 
 //MARK: - CollectionViewTableViewCell
 class CollectionViewTableViewCell: UITableViewCell {
     
     static let resulId = "CollectionViewTableViewCell"
+    private var title: [Movie] = [Movie]()
+    
+    weak var delegate: CollectionViewTableViewCellDelegate?
     
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .horizontal
         layout.itemSize = CGSize(width: 140, height: 200)
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collection.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
+        collection.register(TitleCollectionViewCell.self, forCellWithReuseIdentifier: TitleCollectionViewCell.reuseId)
         collection.dataSource = self
         collection.delegate = self
         
@@ -41,21 +47,53 @@ class CollectionViewTableViewCell: UITableViewCell {
         super.layoutSubviews()
         collectionView.frame = contentView.bounds
     }
+    
+    public func configure(with title: [Movie]) {
+        self.title = title
+        DispatchQueue.main.async { [weak self] in
+            self?.collectionView.reloadData()
+        }
+    }
+    
 }
 //MARK:  UICollectionViewDelegate
 extension CollectionViewTableViewCell: UICollectionViewDelegate {
-    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
+        
+        let title = title[indexPath.row]
+        guard let titleName = title.nameRu ?? title.nameOriginal  else {return}
+        
+        APICaller.shared.getMovie(with: titleName + "trailer") { [weak self] result in
+            switch result {
+            case .success(let videoElement):
+                
+                let title = self?.title[indexPath.row]
+                guard let titleType = title?.type else {return}
+                
+                guard let self = self else {return}
+                let viewModel = TitlePreviewViewModel(title: titleName, youtubeView: videoElement, titleOverview: titleType)
+                delegate?.collectionViewTableViewCellDidTapCell(self, viewModel: viewModel)
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
 }
 
 //MARK: UICollectionViewDataSource
 extension CollectionViewTableViewCell: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 10
+        return title.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
-        cell.backgroundColor = .brown
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TitleCollectionViewCell.reuseId, for: indexPath) as? TitleCollectionViewCell else {return UICollectionViewCell()}
+        
+        let model = title[indexPath.row].posterURL
+        
+        cell.configure(with: model)
+        
         return cell
     }
     

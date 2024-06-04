@@ -37,7 +37,6 @@ class HeaderUIView: UIView {
     private lazy var mainImage: UIImageView = {
         $0.contentMode = .scaleAspectFill
         $0.clipsToBounds = true
-        $0.image = UIImage(named: "mainImage")
         return $0
     }(UIImageView())
     
@@ -70,6 +69,11 @@ class HeaderUIView: UIView {
             downButton.bottomAnchor.constraint(equalTo: playButton.bottomAnchor),
         
         ])
+    }
+    
+    public func configure(with model: TitleViewModel) {
+        guard let url = URL(string: "https://kinopoiskapiunofficial.tech/images/posters/kp\(model.posterURL)") else {return}
+        mainImage.sd_setImage(with: url, completed: nil)
     }
     //MARK:  LayoutSubviews
     override func layoutSubviews() {

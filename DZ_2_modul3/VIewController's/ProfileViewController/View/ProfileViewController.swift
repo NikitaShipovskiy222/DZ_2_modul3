@@ -100,9 +100,10 @@ extension ProfileViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         var config = cell.defaultContentConfiguration()
         cell.backgroundColor = UIColor(named: "mainColor")
-    
+        
         let items = item[indexPath.row]
         config.text = items.name
+        config.textProperties.color = .black
         config.textProperties.font = UIFont.systemFont(ofSize: 15, weight: .medium)
         cell.contentConfiguration = config
         return cell

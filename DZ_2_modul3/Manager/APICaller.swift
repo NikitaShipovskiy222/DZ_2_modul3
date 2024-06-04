@@ -7,28 +7,36 @@
 
 import Foundation
 
-
 protocol Network: AnyObject {
     var url: URL? {get set}
     var requeset: URLRequest? {get set}
-    func sendRequest(complition: @escaping (String) -> Void)
+    
+}
+
+enum APIError: Error {
+    case failedData
+}
+
+struct Constant {
+    static let youtubeAPI = "AIzaSyCWpKF8Ydy1mhg0ok5Oh8c3O8NI845HjXE"
+    static let YoutubeBaseURL = "https://youtube.googleapis.com/youtube/v3/search?"
 }
 
 class APICaller: Network {
-
     
-
+    
+    
     static let  shared = APICaller()
     var url: URL?
     var requeset: URLRequest?
+
     
-    func sendRequest(complition: @escaping (String) -> Void) {
-       // application/json
+    func sendRequest(complition: @escaping (Result<[Movie], Error>) -> Void) {
+        
         var urlComponents = URLComponents()
         urlComponents.scheme = "https"
         urlComponents.host = "kinopoiskapiunofficial.tech"
         urlComponents.path = "/api/v2.2/films"
-        
         
         self.url = urlComponents.url
         
@@ -38,34 +46,41 @@ class APICaller: Network {
             requeset?.setValue("b7659ec1-921b-4ad2-a568-b32ba2e3df61", forHTTPHeaderField: "x-api-key")
             requeset?.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
-//            let result = try JSONDecoder().decode(TrendingMoviesResponse.self, from: data)
+            
             URLSession.shared.dataTask(with: requeset!) { data, responsce, err in
                 guard let data = data, err == nil else {
                     print(err!.localizedDescription)
                     return
                 }
-                print(data)
-                
                 do {
-                   let result = try JSONDecoder().decode(TrendingMoviesResponse.self, from: data)
-                    /*try JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)*/
-                    print(result)
+                    let result = try JSONDecoder().decode(TrendingMoviesResponse.self, from: data)
+                    complition(.success(result.items))
                 }catch{
-                    print(err!.localizedDescription)
+                    complition(.failure(APIError.failedData))
                 }
             }.resume()
         }
         
     }
     
-//https://kinopoiskapiunofficial.tech/api/v2.2/films/30
+    func getMovie(with q: String, complition: @escaping (Result<VideoElement, Error>) -> Void) {
+        guard let q = q.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {return}
+        guard let url = URL(string: "\(Constant.YoutubeBaseURL)q=\(q)&key=\(Constant.youtubeAPI)") else {return}
+        
+        URLSession.shared.dataTask(with: URLRequest(url: url)) { data, _, error in
+            guard let data = data, error == nil else {
+                return
+            }
+            do {
+                let result = try JSONDecoder().decode(YoutubeSearchResponce.self, from: data)
+                print(result)
+                complition(.success(result.items[0]))
+
+            }catch{
+                print(error.localizedDescription)
+            }
+        }.resume()
+    }
     
-//    func getTredingMovies(complition: @escaping (String) -> Void) {
-//        guard let url = URL(string: "\(Constant.basecURL)/v1.4/movie/20") else {return}
-//    }
-//    
 }
-//curl -X 'GET' \
-//  'https://api.kinopoisk.dev/v1.4/movie/20' \
-//  -H 'accept: application/json' \
-//  -H 'X-API-KEY: 6P0VQGQ-871MQ83-KNB6W6Q-JF38WHR'
+

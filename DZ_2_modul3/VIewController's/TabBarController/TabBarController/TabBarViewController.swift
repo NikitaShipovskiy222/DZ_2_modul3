@@ -25,8 +25,8 @@ final class TabBarViewController: UITabBarController {
         mainVc.tabBarItem.image = UIImage(systemName: "house")
         mainVc.tabBarItem.selectedImage = UIImage(systemName: "house.fill")
         
-        let newsVc = NewsViewController()
-        newsVc.tabBarItem.title = "Новости"
+        let newsVc = UpcomingViewController()
+        newsVc.tabBarItem.title = "Cкоро"
         newsVc.tabBarItem.image = UIImage(systemName: "newspaper")
         newsVc.tabBarItem.selectedImage = UIImage(systemName: "newspaper.fill")
         
